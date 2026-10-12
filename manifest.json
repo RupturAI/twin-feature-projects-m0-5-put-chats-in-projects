@@ -1,0 +1,87 @@
+{
+  "format": 1,
+  "repo": "twin",
+  "branch": "feature/projects-m0-5-put-chats-in-projects",
+  "slug": "feature-projects-m0-5-put-chats-in-projects",
+  "head": "9451e1e7b8e6f2f7a80eadb83bd6ef13de98a29d",
+  "base": "6ef8e3e8462807cc254497dd036c95309309bfb7",
+  "base_ref": "projects-dev",
+  "base_subject": "Merge branch 'feature/projects-m0-4-list-project-chats' into projects-dev",
+  "created": "2026-10-12T20:03:50",
+  "commits": [
+    {
+      "sha": "9451e1e7b8e6f2f7a80eadb83bd6ef13de98a29d",
+      "subject": "feat(conversations): start chats in projects and move chats into them"
+    }
+  ],
+  "pr": {
+    "title": "feat(conversations): start chats in projects and move chats into them",
+    "description": "- `POST /chatbot/streaming/conversations` with `project_id`:\n  - creates the chat in that project\n  - the project is checked before the stream starts: an unknown or non-UUID id gives 404 `{\"detail\": \"Project not found.\"}`, another user's project gives 403 `FORBIDDEN_PROJECT_ACCESS`\n  - a blank or null `project_id` creates the chat outside projects\n- `PATCH /chatbot/conversations/{id}` with `{\"project_id\": \"<id>\"}`:\n  - moves the chat into that project, also from another project\n  - an unknown or non-UUID id gives 404, another user's project gives 403 `FORBIDDEN_PROJECT_ACCESS`, another user's chat gives 403 `FORBIDDEN_CONVERSATION_ACCESS`\n  - `null` or blank gives 400\n  - the chat's `updated_at` is unchanged\n- `find_my_project` in `project_views.py`, used by the conversation list, the conversation patch and the streaming create\n- `move_conversation_to_project` on `WebConversationService` and `WebConversationRepository`; `create_conversation` takes `project_id`\n- Swagger: 403 and 404 on the streaming create and the conversation patch; the \"accepted but not applied yet\" notes are gone\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)"
+  },
+  "files": [
+    {
+      "path": "src/chatbot/serializers.py",
+      "status": "M",
+      "old_mode": "100644",
+      "new_mode": "100644",
+      "new_sha256": "44ea6c366a2a956df61ec0dcaf5f84e9418b6129fea823e1816ccd612578f2bb",
+      "base_sha256": "61403b382fde21d5502712a31db43aa4b627478afcd4a1b2efdcb83f48b7a767"
+    },
+    {
+      "path": "src/chatbot/views/chatbot_views.py",
+      "status": "M",
+      "old_mode": "100644",
+      "new_mode": "100644",
+      "new_sha256": "a40586f19880ae8497ef3da2c89dbc69fe06bb593c4ddf2939d14a2c80cbf70b",
+      "base_sha256": "d86c4aa8aa6552b71bfbd133ba4cae4240ec40b875af33ed111ed7ae768c72bb"
+    },
+    {
+      "path": "src/chatbot/views/project_views.py",
+      "status": "M",
+      "old_mode": "100644",
+      "new_mode": "100644",
+      "new_sha256": "4f7622ec8b93cc09eae5e1e4adace931ed7614eb601222b74ac27cb82a3ddfbe",
+      "base_sha256": "420344cf791eea74569257f82cff480a3d48eea57516d6e4de920ba3b68d12c9"
+    },
+    {
+      "path": "src/chatbot/views/stream_views.py",
+      "status": "M",
+      "old_mode": "100644",
+      "new_mode": "100644",
+      "new_sha256": "214a91a78a9b8d5d262698af9f9607872790ae7cd244dc84c5dbb4dd9fcf6917",
+      "base_sha256": "0ab6adcd330e1d9a5b5fbc686356b5ae34ddb50ff3ab6a3291f3aacb2a8b1902"
+    },
+    {
+      "path": "src/chatbot/web_conversation_repository.py",
+      "status": "M",
+      "old_mode": "100644",
+      "new_mode": "100644",
+      "new_sha256": "05bbc1dbeac3de7d8d259f8a1736ee8a2cc890bedccf698264790b83fc118bc2",
+      "base_sha256": "39650db49a7f2e346daa796860b4fac730c6048e362a0a9728afd679805ba406"
+    },
+    {
+      "path": "src/chatbot/web_conversation_service.py",
+      "status": "M",
+      "old_mode": "100644",
+      "new_mode": "100644",
+      "new_sha256": "ddd7fd7e7d29df9fc8ffdb368bd833d338952fce0471f35c774f4e213eb44439",
+      "base_sha256": "082ff9b496366c6448abbdf67ea4d4d648af28a9adbeada10984d5fac266d320"
+    },
+    {
+      "path": "tests/unit/chatbot/test_web_conversation_service.py",
+      "status": "M",
+      "old_mode": "100644",
+      "new_mode": "100644",
+      "new_sha256": "373370ea8f7f16ecc920c2752d9377a830dba1f9fbc8197a1329d42dd22b23ec",
+      "base_sha256": "543b732cb9358e9dc7e7645621b3d4e06f85f0e7a4d2382a03c58d1a7c344dd3"
+    },
+    {
+      "path": "tests/unit/chatbot/views/test_conversation_views.py",
+      "status": "M",
+      "old_mode": "100644",
+      "new_mode": "100644",
+      "new_sha256": "ba8312776349ea61b3f98adadc54b05479b3a0dad8cb4e3e99d4eecce408231e",
+      "base_sha256": "e407b315aa9c2037d768fa7bba5d0534ece7b5f9060535ec22e2fa526aa54517"
+    }
+  ]
+}
