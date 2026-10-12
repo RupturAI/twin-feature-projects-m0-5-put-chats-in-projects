@@ -82,6 +82,14 @@
       "new_mode": "100644",
       "new_sha256": "ba8312776349ea61b3f98adadc54b05479b3a0dad8cb4e3e99d4eecce408231e",
       "base_sha256": "e407b315aa9c2037d768fa7bba5d0534ece7b5f9060535ec22e2fa526aa54517"
+    },
+    {
+      "path": "http/projects.http",
+      "status": "A",
+      "old_mode": "000000",
+      "new_mode": "100644",
+      "new_sha256": "bfc80490c6b45b691645bde0470d2ac99395a5c573ab3bfab22d717f733f6d2d",
+      "base_sha256": null
     }
   ]
 }

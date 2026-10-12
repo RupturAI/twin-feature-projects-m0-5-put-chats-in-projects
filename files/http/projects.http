@@ -1,0 +1,390 @@
+# Projects API against a local twin: runserver 0.0.0.0:8001.
+#
+# token: a local JWT. Re-mint with `.venv/bin/python .local-jwt/mint_token.py`.
+
+@baseUrl = http://localhost:8001/chatbot
+@token = <paste a token for this environment>
+# otherToken: a second local user (other.user@twin.local), to check you only see your own projects.
+@otherToken = <paste a token for this environment>
+
+### ---- PR 1: store projects (model and migration only, nothing to call) ----
+
+### ---- PR 2: list and create projects ----
+@pr2ProjectId = {{pr2Project.response.body.$.id}}
+
+### Create a project -> 201, with conversation_count 0 and files []
+# @name pr2Project
+POST {{baseUrl}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Q3 audit",
+  "description": "Prepare the Q3 audit of application X."
+}
+
+### List my projects -> 200, most recently updated first
+GET {{baseUrl}}/projects
+Authorization: Bearer {{token}}
+
+### List projects as another user -> 200, without local.dev's projects
+GET {{baseUrl}}/projects
+Authorization: Bearer {{otherToken}}
+
+### Create a project without a name -> 400
+POST {{baseUrl}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### Projects without a token -> 401
+GET {{baseUrl}}/projects
+
+### Clean up: delete the project -> 204
+DELETE {{baseUrl}}/projects/{{pr2ProjectId}}
+Authorization: Bearer {{token}}
+
+### ---- PR 3: read, rename and delete a project ----
+@pr3ProjectId = {{pr3Project.response.body.$.id}}
+@pr3FileId = {{$guid}}
+
+### Create a project -> 201
+# @name pr3Project
+POST {{baseUrl}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Q3 audit",
+  "description": "Prepare the Q3 audit of application X."
+}
+
+### Project details -> 200, with conversation_count and files []
+GET {{baseUrl}}/projects/{{pr3ProjectId}}
+Authorization: Bearer {{token}}
+
+### Edit a project -> 200, in the detail shape
+PATCH {{baseUrl}}/projects/{{pr3ProjectId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Renamed",
+  "description": "New description."
+}
+
+### Clear a project's description -> 200, with description ""
+PATCH {{baseUrl}}/projects/{{pr3ProjectId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": ""
+}
+
+### Edit a project without name or description -> 400
+PATCH {{baseUrl}}/projects/{{pr3ProjectId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### Rename a project to a blank name -> 400
+PATCH {{baseUrl}}/projects/{{pr3ProjectId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": ""
+}
+
+### Project details with a non-UUID id -> 404
+GET {{baseUrl}}/projects/not-a-uuid
+Authorization: Bearer {{token}}
+
+### Upload a file to a project -> 501
+POST {{baseUrl}}/projects/{{pr3ProjectId}}/files
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=ProjectFileBoundary
+
+--ProjectFileBoundary
+Content-Disposition: form-data; name="file"; filename="notes.txt"
+Content-Type: text/plain
+
+Shared notes for every chat in the project.
+--ProjectFileBoundary--
+
+### Remove a file from a project -> 404, the project has no files
+DELETE {{baseUrl}}/projects/{{pr3ProjectId}}/files/{{pr3FileId}}
+Authorization: Bearer {{token}}
+
+### Another user's project details -> 403
+GET {{baseUrl}}/projects/{{pr3ProjectId}}
+Authorization: Bearer {{otherToken}}
+
+### Edit another user's project -> 403
+PATCH {{baseUrl}}/projects/{{pr3ProjectId}}
+Authorization: Bearer {{otherToken}}
+Content-Type: application/json
+
+{
+  "name": "Not yours"
+}
+
+### Delete another user's project -> 403
+DELETE {{baseUrl}}/projects/{{pr3ProjectId}}
+Authorization: Bearer {{otherToken}}
+
+### Upload a file to another user's project -> 403
+POST {{baseUrl}}/projects/{{pr3ProjectId}}/files
+Authorization: Bearer {{otherToken}}
+Content-Type: multipart/form-data; boundary=ProjectFileBoundary
+
+--ProjectFileBoundary
+Content-Disposition: form-data; name="file"; filename="notes.txt"
+Content-Type: text/plain
+
+Shared notes for every chat in the project.
+--ProjectFileBoundary--
+
+### Remove a file from another user's project -> 403
+DELETE {{baseUrl}}/projects/{{pr3ProjectId}}/files/{{pr3FileId}}
+Authorization: Bearer {{otherToken}}
+
+### Delete a project with its files and chats -> 204
+DELETE {{baseUrl}}/projects/{{pr3ProjectId}}
+Authorization: Bearer {{token}}
+
+### Project details after deleting it -> 404
+GET {{baseUrl}}/projects/{{pr3ProjectId}}
+Authorization: Bearer {{token}}
+
+### ---- PR 4: list a project's chats ----
+@pr4ProjectId = {{pr4Project.response.body.$.id}}
+@pr4ChatId = {{pr4Chat.response.body.$.conversation_id}}
+
+### Create a project -> 201
+# @name pr4Project
+POST {{baseUrl}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Q3 audit",
+  "description": "Prepare the Q3 audit of application X."
+}
+
+### Start a chat outside the project -> 201, with its conversation_id
+# @name pr4Chat
+POST {{baseUrl}}/conversations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "message": "Say hello in one short sentence."
+}
+
+### Main chat list -> 200, only chats outside projects, the new chat with project_id null
+GET {{baseUrl}}/conversations
+Authorization: Bearer {{token}}
+
+### A project's chats -> 200, [] since no chat is in it
+GET {{baseUrl}}/conversations?project_id={{pr4ProjectId}}
+Authorization: Bearer {{token}}
+
+### Main chat list with a blank project_id -> 200, the main list
+GET {{baseUrl}}/conversations?project_id=
+Authorization: Bearer {{token}}
+
+### Chats of an unknown project -> 404
+GET {{baseUrl}}/conversations?project_id=not-a-uuid
+Authorization: Bearer {{token}}
+
+### Chats of another user's project -> 403
+GET {{baseUrl}}/conversations?project_id={{pr4ProjectId}}
+Authorization: Bearer {{otherToken}}
+
+### Chat details -> 200, with project_id null
+GET {{baseUrl}}/conversations/{{pr4ChatId}}
+Authorization: Bearer {{token}}
+
+### Rename the chat -> 200, with project_id null
+PATCH {{baseUrl}}/conversations/{{pr4ChatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Renamed chat"
+}
+
+### Delete the chat -> 200, with project_id null
+DELETE {{baseUrl}}/conversations/{{pr4ChatId}}
+Authorization: Bearer {{token}}
+
+### Clean up: delete the project -> 204
+DELETE {{baseUrl}}/projects/{{pr4ProjectId}}
+Authorization: Bearer {{token}}
+
+### ---- PR 5: start chats in projects and move chats into them ----
+@pr5ProjectId = {{pr5Project.response.body.$.id}}
+@pr5SecondProjectId = {{pr5SecondProject.response.body.$.id}}
+@pr5OtherUsersProjectId = {{pr5OtherUsersProject.response.body.$.id}}
+@pr5ChatId = {{pr5Chat.response.body.$.conversation_id}}
+
+### Create a project -> 201
+# @name pr5Project
+POST {{baseUrl}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Q3 audit 5",
+  "description": "Prepare the Q3 audit of application X."
+}
+
+### Create a second project -> 201
+# @name pr5SecondProject
+POST {{baseUrl}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Onboarding"
+}
+
+### Create a project as another user -> 201
+# @name pr5OtherUsersProject
+POST {{baseUrl}}/projects
+Authorization: Bearer {{otherToken}}
+Content-Type: application/json
+
+{
+  "name": "Not local.dev's"
+}
+
+### Start a chat inside the project -> 201 NDJSON stream
+POST {{baseUrl}}/streaming/conversations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "message": "Say hello in one short sentence.",
+  "project_id": "{{pr5ProjectId}}"
+}
+
+### The project's chats -> 200, the new chat, with the project's id as project_id
+GET {{baseUrl}}/conversations?project_id={{pr5ProjectId}}
+Authorization: Bearer {{token}}
+
+### Start a chat in an unknown project -> 404, before any stream, and no chat is created
+POST {{baseUrl}}/streaming/conversations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "message": "Say hello in one short sentence.",
+  "project_id": "not-a-uuid"
+}
+
+### Start a chat in another user's project -> 403, before any stream, and no chat is created
+POST {{baseUrl}}/streaming/conversations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "message": "Say hello in one short sentence.",
+  "project_id": "{{pr5OtherUsersProjectId}}"
+}
+
+### Start a chat outside the projects -> 201, with its conversation_id
+# @name pr5Chat
+POST {{baseUrl}}/conversations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "message": "Say hello in one short sentence."
+}
+
+### Move the chat into the project -> 200, with the project's id as project_id
+PATCH {{baseUrl}}/conversations/{{pr5ChatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "project_id": "{{pr5ProjectId}}"
+}
+
+### Move the chat on to the second project -> 200, with the second project's id as project_id
+PATCH {{baseUrl}}/conversations/{{pr5ChatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "project_id": "{{pr5SecondProjectId}}"
+}
+
+### The second project's chats -> 200, only the moved chat
+GET {{baseUrl}}/conversations?project_id={{pr5SecondProjectId}}
+Authorization: Bearer {{token}}
+
+### Main chat list -> 200, without the moved chat
+GET {{baseUrl}}/conversations
+Authorization: Bearer {{token}}
+
+### Move the chat into an unknown project -> 404
+PATCH {{baseUrl}}/conversations/{{pr5ChatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "project_id": "not-a-uuid"
+}
+
+### Move the chat into another user's project -> 403
+PATCH {{baseUrl}}/conversations/{{pr5ChatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "project_id": "{{pr5OtherUsersProjectId}}"
+}
+
+### Another user moves local.dev's chat into their own project -> 403
+PATCH {{baseUrl}}/conversations/{{pr5ChatId}}
+Authorization: Bearer {{otherToken}}
+Content-Type: application/json
+
+{
+  "project_id": "{{pr5OtherUsersProjectId}}"
+}
+
+### Move the chat out of a project -> 400, out of scope for M0/M1
+PATCH {{baseUrl}}/conversations/{{pr5ChatId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "project_id": null
+}
+
+### Chat details -> 200, still in the second project
+GET {{baseUrl}}/conversations/{{pr5ChatId}}
+Authorization: Bearer {{token}}
+
+### Clean up: delete the project and the chat started in it -> 204
+DELETE {{baseUrl}}/projects/{{pr5ProjectId}}
+Authorization: Bearer {{token}}
+
+### Clean up: delete the second project and the moved chat -> 204
+DELETE {{baseUrl}}/projects/{{pr5SecondProjectId}}
+Authorization: Bearer {{token}}
+
+### Clean up: delete the other user's project -> 204
+DELETE {{baseUrl}}/projects/{{pr5OtherUsersProjectId}}
+Authorization: Bearer {{otherToken}}
+
+### Chat details after deleting its project -> 404
+GET {{baseUrl}}/conversations/{{pr5ChatId}}
+Authorization: Bearer {{token}}

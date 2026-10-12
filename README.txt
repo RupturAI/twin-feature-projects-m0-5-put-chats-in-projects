@@ -45,3 +45,4 @@ Files (A added, M modified, D deleted):
   M src/chatbot/web_conversation_service.py
   M tests/unit/chatbot/test_web_conversation_service.py
   M tests/unit/chatbot/views/test_conversation_views.py
+  A http/projects.http
